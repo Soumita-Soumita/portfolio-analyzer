@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio Analyzer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+      background: #f0f2f5;
+      color: #1f2328;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1f2328;
+      color: #fff;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 { font-size: 1.25rem; font-weight: 600; letter-spacing: 0.01em; }
+    header span { font-size: 0.85rem; color: #8b949e; margin-top: 2px; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
+
+    /* ── Form card ── */
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .card h2 { font-size: 0.95rem; font-weight: 600; color: #57606a; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 2fr;
+      gap: 14px;
+      align-items: end;
+    }
+    @media (max-width: 700px) { .form-grid { grid-template-columns: 1fr 1fr; } }
+
+    .field label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #57606a;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .field input {
+      width: 100%;
+      padding: 8px 11px;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      color: #1f2328;
+      background: #f6f8fa;
+      transition: border-color 0.15s;
+      outline: none;
+    }
+    .field input:focus { border-color: #3b82d4; background: #fff; }
+
+    .btn {
+      padding: 9px 22px;
+      background: #3b82d4;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+      align-self: end;
+    }
+    .btn:hover { background: #2563b0; }
+
+    /* ── Error banner ── */
+    .error {
+      background: #fff1f0;
+      border: 1px solid #fca5a5;
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: #b91c1c;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+
+    /* ── Metrics table ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    thead th {
+      background: #f6f8fa;
+      color: #57606a;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 10px 14px;
+      text-align: center;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    thead th:first-child { text-align: left; }
+    tbody tr { border-bottom: 1px solid #f0f2f5; transition: background 0.1s; }
+    tbody tr:hover { background: #f6f8fa; }
+    tbody td { padding: 10px 14px; text-align: center; }
+    tbody td:first-child { text-align: left; font-weight: 600; }
+
+    .portfolio-row { background: #f0f6ff !important; }
+    .portfolio-row td { font-weight: 700; color: #1d4ed8; }
+    .portfolio-row td:first-child { color: #1d4ed8; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #dcfce7; color: #15803d; }
+    .badge-red   { background: #fee2e2; color: #b91c1c; }
+    .badge-blue  { background: #dbeafe; color: #1d4ed8; }
+    .badge-gray  { background: #f1f5f9; color: #475569; }
+
+    /* ── Charts ── */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 700px) { .charts-grid { grid-template-columns: 1fr; } }
+    .chart-box { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; }
+    .chart-box h3 { font-size: 0.82rem; font-weight: 600; color: #57606a; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 14px; }
+    .chart-box canvas { max-height: 220px; }
+
+    /* ── Definitions ── */
+    .defs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 600px) { .defs-grid { grid-template-columns: 1fr; } }
+    .def-item { padding: 10px 14px; background: #f6f8fa; border-radius: 7px; border-left: 3px solid #3b82d4; }
+    .def-item strong { display: block; font-size: 0.82rem; color: #1f2328; margin-bottom: 3px; }
+    .def-item span { font-size: 0.8rem; color: #57606a; }
+
+    footer { text-align: center; font-size: 0.78rem; color: #8b949e; margin-top: 40px; padding-bottom: 20px; }
+
+    .hint { font-size: 0.75rem; color: #8b949e; margin-top: 5px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>📈 Financial Portfolio &amp; Risk-Return Analyzer</h1>
+    <span>Powered by Yahoo Finance · Real-time market data</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ── Config form ── -->
+  <div class="card">
+    <h2>Configuration</h2>
+    <form method="POST" action="/">
+      <div class="form-grid">
+        <div class="field">
+          <label>Tickers (comma-separated)</label>
+          <input type="text" name="tickers" value="{{ tickers_str }}" placeholder="AAPL,MSFT,GOOGL,AMZN" required />
+        </div>
+        <div class="field">
+          <label>History (years)</label>
+          <input type="number" name="years" value="{{ years }}" min="1" max="20" required />
+        </div>
+        <div class="field">
+          <label>Risk-Free Rate</label>
+          <input type="number" name="risk_free" value="{{ risk_free }}" min="0" max="1" step="0.001" placeholder="0.04" required />
+        </div>
+        <div class="field">
+          <label>Weights (optional, e.g. 0.4,0.3,0.2,0.1)</label>
+          <input type="text" name="weights" value="{{ weights_str }}" placeholder="Leave blank for equal weights" />
+        </div>
+      </div>
+      <p class="hint" style="margin-top:10px;">Weights must sum to 1. Leave blank for equal weighting.</p>
+      <div style="margin-top:16px;">
+        <button type="submit" class="btn">▶ Run Analysis</button>
+      </div>
+    </form>
+  </div>
+
+  {% if error %}
+  <div class="error">⚠ {{ error }}</div>
+  {% endif %}
+
+  {% if rows %}
+
+  <!-- ── Charts ── -->
+  <div class="charts-grid">
+    <div class="chart-box">
+      <h3>Annualised Return (%)</h3>
+      <canvas id="returnChart"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Annualised Volatility (%)</h3>
+      <canvas id="volChart"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Sharpe Ratio</h3>
+      <canvas id="sharpeChart"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Return vs Volatility (Risk-Return)</h3>
+      <canvas id="scatterChart"></canvas>
+    </div>
+  </div>
+
+  <!-- ── Metrics table ── -->
+  <div class="card">
+    <h2>Risk / Return Metrics</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Ann. Return</th>
+            <th>Ann. Volatility</th>
+            <th>Sharpe Ratio</th>
+            <th>Max Drawdown</th>
+            <th>DD Peak</th>
+            <th>DD Trough</th>
+            <th>DD Recovery</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr class="{{ 'portfolio-row' if r.is_portfolio else '' }}">
+            <td>
+              {% if r.is_portfolio %}
+                <span class="badge badge-blue">Portfolio</span>
+              {% else %}
+                {{ r.ticker }}
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge {{ 'badge-green' if r.ann_return_raw >= 0 else 'badge-red' }}">
+                {{ r.ann_return }}
+              </span>
+            </td>
+            <td>{{ r.ann_volatility }}</td>
+            <td>
+              <span class="badge {{ 'badge-green' if r.sharpe_raw >= 1 else ('badge-gray' if r.sharpe_raw >= 0 else 'badge-red') }}">
+                {{ r.sharpe }}
+              </span>
+            </td>
+            <td>
+              <span class="badge badge-red">{{ r.max_drawdown }}</span>
+            </td>
+            <td>{{ r.peak_date }}</td>
+            <td>{{ r.trough_date }}</td>
+            <td>
+              {% if r.recovery_date == '—' %}
+                <span style="color:#f59e0b;font-weight:600;">Still underwater</span>
+              {% else %}
+                {{ r.recovery_date }}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Metric definitions ── -->
+  <div class="card">
+    <h2>Metric Definitions</h2>
+    <div class="defs-grid">
+      <div class="def-item">
+        <strong>Ann. Return (CAGR)</strong>
+        <span>exp(mean daily log-return × 252) − 1</span>
+      </div>
+      <div class="def-item">
+        <strong>Ann. Volatility</strong>
+        <span>σ_daily × √252 (std dev of daily log-returns)</span>
+      </div>
+      <div class="def-item">
+        <strong>Sharpe Ratio</strong>
+        <span>(Ann. Return − Risk-Free Rate) ÷ Ann. Volatility</span>
+      </div>
+      <div class="def-item">
+        <strong>Max Drawdown</strong>
+        <span>Maximum peak-to-trough equity decline in the window</span>
+      </div>
+      <div class="def-item">
+        <strong>DD Peak / Trough</strong>
+        <span>Calendar dates bounding the worst drawdown episode</span>
+      </div>
+      <div class="def-item">
+        <strong>DD Recovery</strong>
+        <span>First date equity recovered above the prior peak</span>
+      </div>
+    </div>
+    <p style="margin-top:14px;font-size:0.78rem;color:#8b949e;">
+      All returns are based on split- and dividend-adjusted daily closing prices sourced from Yahoo Finance.
+    </p>
+  </div>
+
+  <!-- ── Chart.js ── -->
+  <script>
+    const d = {{ chart_data | tojson }};
+    const COLORS = ["#3b82d4","#7c5cd8","#10b981","#f59e0b","#ef4444","#6366f1","#14b8a6","#f97316"];
+
+    function barChart(id, labels, data, label, color) {
+      new Chart(document.getElementById(id), {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{ label, data, backgroundColor: color || COLORS, borderRadius: 5, borderSkipped: false }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: { y: { grid: { color: "#f0f2f5" }, ticks: { font: { size: 11 } } }, x: { grid: { display: false }, ticks: { font: { size: 11 } } } },
+          responsive: true, maintainAspectRatio: true
+        }
+      });
+    }
+
+    barChart("returnChart", d.labels, d.returns, "Ann. Return (%)", d.labels.map((_, i) => COLORS[i % COLORS.length]));
+    barChart("volChart",    d.labels, d.volatilities, "Ann. Volatility (%)", d.labels.map((_, i) => COLORS[i % COLORS.length]));
+    barChart("sharpeChart", d.labels, d.sharpes, "Sharpe Ratio", d.labels.map((_, i) => COLORS[i % COLORS.length]));
+
+    // Scatter: return vs volatility
+    new Chart(document.getElementById("scatterChart"), {
+      type: "scatter",
+      data: {
+        datasets: d.labels.map((label, i) => ({
+          label,
+          data: [{ x: d.volatilities[i], y: d.returns[i] }],
+          backgroundColor: COLORS[i % COLORS.length],
+          pointRadius: 8, pointHoverRadius: 10
+        }))
+      },
+      options: {
+        plugins: { legend: { position: "bottom", labels: { font: { size: 11 }, boxWidth: 12 } } },
+        scales: {
+          x: { title: { display: true, text: "Volatility (%)", font: { size: 11 } }, grid: { color: "#f0f2f5" }, ticks: { font: { size: 11 } } },
+          y: { title: { display: true, text: "Return (%)", font: { size: 11 } }, grid: { color: "#f0f2f5" }, ticks: { font: { size: 11 } } }
+        },
+        responsive: true, maintainAspectRatio: true
+      }
+    });
+  </script>
+
+  {% else %}
+  <div class="card" style="text-align:center;padding:48px 24px;color:#8b949e;">
+    <div style="font-size:2.5rem;margin-bottom:12px;">📊</div>
+    <p style="font-size:1rem;font-weight:500;color:#57606a;">Configure your portfolio above and click <strong>Run Analysis</strong> to get started.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<footer>Made with IBM Bob</footer>
+
+</body>
+</html>
